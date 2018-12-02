@@ -1,0 +1,60 @@
+<style lang="less" scoped>
+.submit-item{
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex-direction: row;
+  padding: 40rpx 20rpx;
+  border-bottom: 1px solid #e5e5e5;
+    .title{
+      color: #c7c7cc;
+      margin-left: 20rpx;
+      flex-grow: 3
+
+    }
+
+    .name{
+      color: #222;
+      margin-left: 20rpx;
+      flex-grow: 1
+
+    }
+    .sub-title{
+      color: #888;
+      margin-left: 20rpx;
+      flex-grow: 1
+
+    }
+}
+</style>
+<template>
+  <view class="submit-item">
+    <view class="title">
+      {{orderData.task.name}}
+    </view>
+    <view class="name">
+      {{orderData.student.displayName}}
+    </view>
+    <view class="sub-title">
+      >
+    </view>
+</view>
+</template>
+<script>
+import wepy from 'wepy'
+
+export default class submitItem extends wepy.component {
+  props = {
+    orderData: Object
+  }
+  data = {
+    createdDate: ''
+  }
+  methods = {
+
+  }
+  computed = {
+
+  }
+}
+</script>

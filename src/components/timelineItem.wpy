@@ -1,0 +1,33 @@
+<template>
+  <view>
+    <image src="{{ imgSrc }}" style="border-radius: 50%; height: 40px; width: 40px;"></image>
+    {{ tlData.user.displayName }} {{ tlData.title }} {{tlData.created}} 点赞数: {{tlData.upVotes.length}}
+    <repeat for="{{tlData.messages}}" key="index" index="index" item="item">
+      <message-item :data="item"></message-item>
+    </repeat>
+  </view>
+</template>
+
+<style lang="less" scoped>
+
+</style>
+
+<script>
+  import wepy from 'wepy'
+  import messageItem from './messageItem'
+
+  export default class timelineItem extends wepy.component {
+    props = {
+      tlData: Object,
+      imgSrc: String
+    }
+    data = {
+      msg: ''
+    }
+    components = {
+      'message-item': messageItem
+    }
+    methods = {
+    }
+  }
+</script>

@@ -1,0 +1,322 @@
+<style lang="less" scoped>
+  .tab-container {
+    margin-top: 40px;
+    padding: 10px;
+  }
+  .card-image {
+    width: 90%; // height: 100px;
+  }
+  .card-title {
+    font-size: 10pt;
+    display: block;
+    text-align:center;
+  }
+  .test-class {
+    background-color: red;
+  }
+</style>
+
+<template>
+  <view>
+    <i-message id="message" />
+    <i-tabs current="{{ current }}" fixed bindchange="handleChange">
+      <i-tab key="tab1" title="我的背包">
+      </i-tab>
+      <i-tab key="tab4" title="宝箱">
+      </i-tab>
+      <i-tab key="tab2" title="二手交易市场">
+      </i-tab>
+      <i-tab key="tab3" title="购买官方卡包">
+      </i-tab>
+    </i-tabs>
+    <i-modal title="出售卡牌" visible="{{ isModalSellCardShow }}" bind:ok="handleSellCardOKClose" bind:cancel="handleSellCardCancelClose">
+      <view>想卖多少个悦币：</view>
+      <view style="color: rgba(238,95,105,0.7)">{{ msgErr }}</view>
+      <view>
+        <input style="background-color:#dcdcdc;margin:0 40px; border-radius:10px;" value="{{modalSellCardMsg}}" type="number" bindinput="onModalSellCardMsgChanged" placeholder="" placeholder-style="color:red" />
+      </view>
+    </i-modal>
+    <i-modal title="{{ selectedCard.name }}" visible="{{ isModalCardDetailShow }}" actions="{{ cardActions }}" bind:click="handleCardDetailClick">
+      <view>{{selectedCard.description}}</view>
+    </i-modal>
+    <view wx:if="{{ current === 'tab1' }}" class="tab-container">
+      <view wx:if="{{myCards.length > 0}}">
+        <i-row>
+          <repeat for="{{myCards}}" key="index" index="index" item="item">
+            <i-col span="6" i-class="col-class" @tap="tgMCardDetailShow({{item}})">
+              <view style="display: block;text-align: center; margin-bottom: 20px;">
+                <image mode="widthFix" src="{{item.file.URL + '-card.small'}}" class="card-image" />
+                <view class="card-title">{{ item.name }}</view>
+                <i-tag>{{ item.category }} </i-tag>
+              </view>
+            </i-col>
+          </repeat>
+        </i-row>
+      </view>
+      <view wx:else>
+        暂无卡牌数据哦~
+      </view>
+    </view>
+    <view wx:if="{{ current === 'tab2' }}" class="tab-container">
+      <view wx:if="{{goods.length > 0}}">
+        <i-row>
+          <repeat for="{{goods}}" key="index" index="index" item="item">
+            <i-col span="6" i-class="col-class">
+              <image mode="widthFix" src="{{item.detail.file.URL + '-card.small'}}" class="card-image" />
+              <view class="card-title">{{ item.name }} </view>
+              <i-button wx:if="{{ item && (userId == item.owner._id) }}" bind:click="revertCard({{item}})" type="ghost" size="small" shape="circle">撤下
+              </i-button>
+              <i-button wx:else bind:click="buyCard({{item}})" type="ghost" shape="circle" size="small">
+                <image style="width: 20px; height: 20px;" src="../assets/images/gold.png" alt="" /> {{ item.price }}
+              </i-button>
+            </i-col>
+          </repeat>
+        </i-row>
+      </view>
+      <view wx:else>
+        暂无卡牌数据哦~
+      </view>
+    </view>
+    <view wx:if="{{ current === 'tab3' }}" class="tab-container">
+      <view wx:if="{{cardPools.length > 0}}">
+        <i-row>
+          <repeat for="{{cardPools}}" key="index" index="index" item="item">
+            <i-col span="8" i-class="col-class">
+              <image mode="widthFix" src="{{item.file.URL + '-card.small'}}" class="card-image" />
+              <view class="card-title">{{ item.name }}</view>
+              <i-button bind:click="buyCardPool({{item}})" type="ghost" shape="circle">
+                <image style="width: 20px; height: 20px;" src="../assets/images/gold.png" alt="" /> {{ item.ticketPrice }}
+              </i-button>
+            </i-col>
+          </repeat>
+        </i-row>
+      </view>
+      <view wx:else>
+        暂无官方卡包哦~
+      </view>
+    </view>
+    <view wx:if="{{ current === 'tab4' }}" class="tab-container">
+      <view wx:if="{{myLotterys.length > 0}}">
+        <repeat for="{{myLotterys}}" key="index" index="index" item="item">
+          <image mode="scaleToFill" src="{{ item.cardPool.file.URL + '-card.small'}}" class="card-image" /> {{ item.cardPool.name }} {{ item.cardPool.description }}
+          <i-button bind:click="openLottery({{item._id}})" type="success" shape="circle">抽奖</i-button>
+        </repeat>
+      </view>
+      <view wx:else>
+        暂无宝箱哦~
+      </view>
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import dayjs from '../utils/dayJS'
+  import {
+    connect
+  } from 'wepy-redux'
+  import {
+    getMyBagCards,
+    getAllGoods,
+    getMyLotterys,
+    getCardPools
+  } from '../store/actions'
+  import * as api from '../api/shop'
+  import {
+    $Message
+  } from '../iview/base/index'
+  @connect({
+    myCards(state) {
+      return state.shop.myBagCards.map((item) => {
+        const newItem = {
+          ...item
+        }
+        newItem.created = dayjs(new Date(item.created)).fromNow()
+        return newItem
+      })
+    },
+    userId(state) {
+      return state.root.userId
+    },
+    totalCardsCount(state) {
+      return state.shop.totalCardsCount
+    },
+    goods(state) {
+      return state.shop.goods.map((item) => {
+        const newItem = {
+          ...item
+        }
+        newItem.created = dayjs(new Date(item.created)).fromNow()
+        return newItem
+      })
+    },
+    cardPools(state) {
+      return state.shop.cardPools
+    },
+    myLotterys(state) {
+      return state.shop.myLotterys
+    },
+    totalGoodsCount(state) {
+      return state.shop.totalGoodsCount
+    }
+  }, {
+    getMyBagCards,
+    getAllGoods,
+    getMyLotterys,
+    getCardPools
+  })
+  export default class shopPage extends wepy.page {
+    data = {
+      myCardsPage: 1,
+      myCardsLimit: 40,
+      goodsPage: 1,
+      goodsLimit: 60,
+      current: 'tab1',
+      isModalSellCardShow: false,
+      selectedCardId: '',
+      modalSellCardMsg: '',
+      msgErr: '',
+      isModalCardDetailShow: false,
+      selectedCard: null,
+      cardActions: [{
+        name: '确定',
+        color: '#2d8cf0'
+      },
+      {
+        name: '出售',
+        color: '#19be6b'
+      }]
+    }
+    config = {
+      usingComponents: {
+        'i-tabs': '/iview/tabs/index',
+        'i-tab': '/iview/tab/index',
+        'i-row': '/iview/row/index',
+        'i-col': '/iview/col/index',
+        'i-tag': '/iview/tag/index',
+        'i-button': '/iview/button/index',
+        'i-modal': '/iview/modal/index',
+        'i-message': '/iview/message/index'
+      }
+    }
+    clearModalSellCard() {
+      this.isModalSellCardShow = false
+      this.selectedCardId = ''
+      this.modalSellCardMsg = ''
+      this.msgErr = ''
+    }
+    methods = {
+      showMsg(content, type, duration) {
+        $Message({
+          content: content || 'の (⊙o⊙)? ...',
+          duration: duration || 5,
+          type: type || 'success'
+        })
+      },
+      handleChange({
+        detail
+      }) {
+        this.current = detail.key
+      },
+      transDate(created) {
+        return dayjs(new Date(created)).fromNow()
+      },
+      async sellCard(item) {
+        await api.sellCard({
+          cardId: item.cardId,
+          price: 30
+        })
+        this.methods.getMyBagCards(this.myCardsPage, this.myCardsLimit)
+        this.methods.getAllGoods(this.goodsPage, this.goodsLimit)
+      },
+      async buyCard(item) {
+        await api.buyGood({
+          goodId: item._id
+        })
+        this.methods.getMyBagCards(this.myCardsPage, this.myCardsLimit)
+        this.methods.getAllGoods(this.goodsPage, this.goodsLimit)
+      },
+      async revertCard(item) {
+        await api.revertGood({
+          goodId: item._id
+        })
+        this.methods.getMyBagCards(this.myCardsPage, this.myCardsLimit)
+        this.methods.getAllGoods(this.goodsPage, this.goodsLimit)
+      },
+      async buyCardPool(item) {
+        await api.buyLottery(item._id)
+        this.methods.getMyBagCards(this.myCardsPage, this.myCardsLimit)
+      },
+      handleCardDetailClick({
+        detail
+      }) {
+        const index = detail.index
+        const cardId = this.selectedCard.cardId
+        console.log('handleCardDetailClick', cardId)
+        this.isModalCardDetailShow = false
+        this.selectedCard = null
+        if (index === 1) {
+          this.isModalSellCardShow = true
+          this.selectedCardId = cardId
+        } else {
+          this.isModalSellCardShow = false
+          this.selectedCardId = ''
+        }
+        this.$apply()
+      },
+      onModalSellCardMsgChanged({
+        detail
+      }) {
+        this.modalSellCardMsg = parseInt(detail.value, 10)
+        if (isNaN(this.modalSellCardMsg)) {
+          this.msgErr = '要填写数字哦~'
+        } else if (this.modalSellCardMsg < 1) {
+          this.msgErr = '必须是大于0的，不能白送啊~'
+        } else if (this.modalSellCardMsg > 9999) {
+          this.msgErr = '不能超过10K的，这么稀有哪舍得卖啊~'
+        } else {
+          this.msgErr = ''
+        }
+      },
+      tgMSellCardShow(id) {
+        this.isModalSellCardShow = !this.isModalSellCardShow
+        this.selectedCardId = id
+      },
+      tgMCardDetailShow(item) {
+        this.isModalCardDetailShow = !this.isModalCardDetailShow
+        this.selectedCard = item
+      },
+      handleCardDetailOKClose() {
+        console.log('etner handleCardDetailOKClose')
+        this.isModalCardDetailShow = false
+        this.selectedCard = null
+      },
+      handleSellCardOKClose() {
+        console.log('handleSellCardOKClose', this.selectedCardId, this.modalSellCardMsg)
+        api.sellCard({
+          cardId: this.selectedCardId,
+          price: this.modalSellCardMsg
+        })
+        this.methods.getMyBagCards(this.myCardsPage, this.myCardsLimit)
+        this.methods.getAllGoods(this.goodsPage, this.goodsLimit)
+        this.clearModalSellCard()
+      },
+      handleSellCardCancelClose() {
+        console.log('handleSellCardCancelClose')
+        this.clearModalSellCard()
+      },
+      async openLottery(id) {
+        const result = await api.openLottery(id)
+        this.methods.showMsg(result.msg, null, 3)
+        this.methods.getMyLotterys()
+        this.methods.getMyBagCards(this.myCardsPage, this.myCardsLimit)
+      }
+    }
+    onReady() {
+      this.methods.getMyBagCards(this.myCardsPage, this.myCardsLimit)
+      this.methods.getAllGoods(this.goodsPage, this.goodsLimit)
+      this.methods.getMyLotterys()
+      this.methods.getCardPools()
+    }
+  }
+</script>

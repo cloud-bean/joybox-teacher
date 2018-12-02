@@ -1,0 +1,228 @@
+<style lang="less" scoped>
+  .wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    background-color: #efefef;
+    padding: 20px;
+  }
+  .entity {
+    margin-top: 20rpx;
+    width: 100%;
+  } // input {
+  //   margin-top: 20rpx;
+  //   border: 1px solid #ccc;
+  //   padding: 10rpx;
+  //   font-size: 13pt;
+  // }
+  // textarea {
+  //   margin-top: 20rpx;
+  //   border: 1px solid #ccc;
+  //   padding: 10rpx;
+  //   font-size: 13pt;
+  //   width: auto;
+  // }
+  button {
+    margin-top: 20rpx;
+  }
+  .hidden-input {
+    display: none;
+  }
+</style>
+
+<template>
+  <view class="wrapper">
+    <form bindsubmit="formSubmit" bindreset="formReset" report-submit="true">
+      <view class="score">
+        <!-- <starPanel></starPanel> -->
+        <view hidden="true">
+          <input name="orderId" value="{{activeOrder._id}}" />
+        </view>
+      </view>
+      <view class="message">
+        <text class="title" wx:if="{{activeOrder._id}}">{{activeOrder.task.name}}-{{activeOrder.student.displayName}}</text>
+        <i-panel title="打分">
+          <i-rate bind:change="onRateChange" value="{{score}}" size="24">
+          </i-rate>
+        </i-panel>
+        <i-panel title="点评">
+          <i-input value="{{ comments }}" type="textarea" title="" mode="normal" maxlength="300" placeholder="请输入作业评语" bindchange="onCommentsChange" />
+        </i-panel>
+        <i-tag wx:for="{{tags}}" wx:key="{{index}}" bindchange="onTagChange" checkable="{{true}}" name="{{index}}" color="{{item.color}}" checked="{{item.checked}}" type="border" style="margin-right:5px;">
+          {{item.name}}
+        </i-tag>
+        {{score}} - {{comments}} - {{orderId}}
+        <button type="primary" formType="submit">提交评价</button>
+      </view>
+    </form>
+    <view class="entity">
+      <view wx:if="{{activeOrder.files[0].type === 0 }}">
+        <image src="{{activeOrder.files[0].URL}}" mode="widthFix" />
+      </view>
+      <view wx:if="{{activeOrder.files[0].type === 1 }}">
+        <button size="small" type="default" @tap="handlePlayVoice">播放语音</button>
+        <!-- <audio src="{{activeOrder.files[0].URL}}" controls></audio> -->
+      </view>
+      <view wx:if="{{activeOrder.files[0].type === 2 }}">
+        <video src="{{activeOrder.files[0].URL}}" class="video-preview" controls></video>
+      </view>
+      <!-- <image mode= "aspectFit" src="./head.jpg"/> -->
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  // import starPanel from '../components/teacherSetScorePage/starPanel'
+  import {
+    connect
+  } from 'wepy-redux'
+  import * as api from '../api'
+  @connect({
+    activeOrder(state) {
+      return state.order.activeOrder
+    },
+    orderId(state) {
+      return state.order.activeOrder._id
+    }
+  }, {})
+  export default class TeacherSetScorePage extends wepy.page {
+    data = {
+      fileURL: '',
+      score: 1,
+      comments: '',
+      tags: []
+      // {
+      //   name: '好棒',
+      //   color: 'red',
+      //   checked: false
+      // },
+      // {
+      //   name: 'nice',
+      //   color: 'bule',
+      //   checked: false
+      // }
+    }
+    components = {
+      // starPanel
+    }
+    config = {
+      usingComponents: {
+        'i-rate': '/iview/rate/index',
+        'i-panel': '/iview/panel/index',
+        'i-input': '/iview/input/index',
+        'i-tag': '/iview/tag/index'
+      }
+    }
+    methods = {
+      async formSubmit(e) {
+        console.log(`form发生了submit事件, formId: ${e.detail.formId}，携带数据为：${JSON.stringify(e.detail.value)}`)
+        const {
+          score,
+          comments,
+          orderId
+        } = e.detail.value
+        if (!score || !comments) {
+          wepy.showModal({
+            title: '提示',
+            content: '请认真填写分数和评语',
+            showCancel: false
+          })
+          return
+        }
+        const res = await api.setScore(score, comments, orderId) // dispatch submit order action
+        console.log(res)
+        wx.navigateTo({
+          url: '/pages/successPage'
+        })
+      },
+      async handlePlayVoice() {
+        const that = this
+        if (!that.fileURL) {
+          try {
+            wepy.showLoading({
+              title: '素材下载中',
+              mask: true
+            })
+            const {
+              tempFilePath
+            } = await wepy.downloadFile({
+              url: that.activeOrder.files[0].URL
+            })
+            wepy.hideLoading()
+            that.fileURL = tempFilePath
+          } catch (e) {
+            console.log(e)
+          }
+        }
+        wepy.showLoading({
+          title: '播放中',
+          mask: true
+        })
+        wx.playVoice({
+          filePath: that.fileURL,
+          success() {
+            wepy.showToast({
+              title: '播放完成',
+              icon: 'success',
+              duration: 1000
+            })
+          },
+          complete() {
+            wepy.hideLoading()
+          }
+        })
+      },
+      onRateChange({
+        detail
+      }) {
+        const index = detail.index
+        this.score = index
+        this.$apply()
+      },
+      onTagChange(event) {
+        const detail = event.detail
+        console.log(['tags[' + event.detail.name + '].checked'], detail.checked)
+      },
+      onCommentsChange(e) {
+        console.log(e.detail)
+        this.comments = e.detail.detail.value
+        console.log(this.comments)
+        this.$apply()
+      }
+    }
+    async onLoad() {
+      const that = this
+      console.log(that.activeOrder.files[0].URL)
+      // try{
+      //   wepy.showLoading({
+      //     title:'素材下载中',
+      //     mask: true
+      //   })
+      //   const {tempFilePath} = await wepy.downloadFile({url: that.activeOrder.files[0].URL})
+      //   this.fileURL = tempFilePath
+      //   wepy.hideLoading()
+      // } catch (e) {
+      //   console.log(e)
+      // }
+      //   let downloadTask = wx.downloadFile({
+      //     url: that.activeOrder.files[0].URL,
+      //     success: function (res) {
+      //       that.fileURL = res.tempFilePath
+      //       console.log(that.fileURL);
+      //     },
+      //     fail: function (res){
+      //       console.log(res);
+      //     },
+      //     complete(){
+      //       console.log('complete');
+      //     }
+      //   })
+      //   downloadTask.onProgressUpdate((res) => {
+      //   console.log('下载进度', res.progress)
+      //   console.log('已经下载的数据长度', res.totalBytesWritten)
+      //   console.log('预期需要下载的数据总长度', res.totalBytesExpectedToWrite)
+      // })
+    }
+  }
+</script>

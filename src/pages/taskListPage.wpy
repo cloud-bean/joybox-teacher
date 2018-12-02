@@ -1,0 +1,120 @@
+<style lang="less" scoped>
+  .user-info {
+    padding: 10rpx 0;
+  }
+  .icon-small {
+    width: 20px;
+    height: 20px;
+  }
+
+  .divs .imgs {
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .divs .infos {
+    display: inline-block;
+  }
+</style>
+
+<template>
+  <view class="wrapper">
+    <navbar :onChange="handleChange"></navbar>
+    <view wx:if="{{hasTasks}}">
+      <i-cell-group>
+        <repeat for="{{myTasks}}" key="index" index="index" item="item">
+          <i-cell title="{{item.name}}" label="{{item.expireTime}}" is-link bind:click="handleTap({{item}})">
+            <view slot="footer" class="divs">
+              <div class="imgs">
+                <image class="icon-small" style="" src="../assets/images/exp.png" alt=""/>
+              </div>
+              <div class="infos" style="margin-right: 10px;">x{{item.exp}}</div>
+              <div class="imgs">
+                <image class="icon-small" src="../assets/images/gold.png" alt=""/>
+              </div>
+              <div class="infos">x{{item.goldToken}}</div>
+            </view>
+          </i-cell>
+        </repeat>
+      </i-cell-group>
+    </view>
+    <view wx:else>
+      暂无任务~
+    </view>
+  </view>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  import navbar from '../components/taskListPage/navbar'
+  import {
+    connect
+  } from 'wepy-redux'
+  import {
+    fetchTasksAction,
+    setActiveTasksAction,
+    showTaskDone,
+    showTaskUnDone
+  } from '../store/actions'
+  import dayjs from '../utils/dayJS'
+  @connect({
+    myTasks(state) {
+      return state.task.showTasks.map((item) => {
+        const newItem = { ...item
+        }
+        const a = new Date(item.expireTime)
+        const b = new Date(item.created)
+        newItem.expireTime = dayjs(a).fromNow()
+        newItem.created = dayjs(b).format('YYYY/MM/DD HH:mm')
+        return newItem
+      })
+    },
+    hasTasks(state) {
+      return state.task.showTasks.length > 0
+    }
+  }, {
+    fetchTasksAction,
+    setActiveTask: setActiveTasksAction,
+    showTaskDone,
+    showTaskUnDone
+  })
+  export default class TaskListPage extends wepy.page {
+    components = {
+      navbar
+    }
+    config = {
+      backgroundColor: '#efeff4',
+      enablePullDownRefresh: true,
+      usingComponents: {
+        'i-button': '/iview/button/index',
+        'i-icon': '/iview/icon/index',
+        'i-card': '/iview/card/index',
+        'i-cell': '/iview/cell/index',
+        'i-panel': '/iview/panel/index'
+      }
+    }
+    onPullDownRefresh() {
+      this.methods.fetchTasksAction()
+      wepy.showToast({
+        title: '任务列表已刷新',
+        icon: 'success',
+        duration: 1000
+      })
+      wepy.stopPullDownRefresh()
+    }
+    computed = {}
+    methods = {
+      handleTap(item, e) {
+        this.methods.setActiveTask(item)
+        wepy.navigateTo({
+          url: '/pages/taskDetailPage'
+        })
+      }
+    }
+    onReady() {
+      this.methods.fetchTasksAction()
+    }
+    onReload() {
+      console.log('onreload of task list page')
+    }
+  }
+</script>

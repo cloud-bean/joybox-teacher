@@ -1,0 +1,14 @@
+<style lang="less" scoped>
+
+</style>
+
+<template>
+  <div>
+    敬请期待~ 我的战队： logo，队名，battle记录，胜负情况，团队积分 所有战队排名
+  </div>
+</template>
+
+<script>
+  import wepy from 'wepy'
+  export default class teamListPage extends wepy.page {}
+</script>

@@ -32,21 +32,8 @@
     config = {
       pages: [
         'pages/initPage',
-        // 'pages/recordPage',
         'pages/teacherSetScorePage',
-        'pages/teacherOrderListPage',
-        // 'pages/homePage',
-        // 'pages/taskListPage',
-        // 'pages/taskDetailPage',
-        // 'pages/submitOrderPage',
-        // 'pages/successPage',
-        // 'pages/cardListPage',
-        // 'pages/storyListPage',
-        // 'pages/storyDetailPage',
-        // 'pages/teamListPage',
-        // 'pages/worldPage',
-        // 'pages/myPage',
-        // 'pages/shopPage'
+        'pages/teacherOrderListPage'
       ],
       window: {
         backgroundTextStyle: 'dark',
@@ -66,20 +53,20 @@
       //     iconPath: '/assets/images/home.gray.png',
       //     selectedIconPath: '/assets/images/home.blue.png',
       //     text: '作业列表'
-      //   }, 
+      //   },
         // {
         //   pagePath: 'pages/cardListPage',
         //   iconPath: '/assets/images/cards.gray.png',
         //   selectedIconPath: '/assets/images/cards.blue.png',
         //   text: '卡牌库'
-        // }, 
+        // },
         // {
         //   pagePath: 'pages/myPage',
         //   iconPath: '/assets/images/mine.gray.png',
         //   selectedIconPath: '/assets/images/mine.blue.png',
         //   text: '我的',
         //   selected: true
-        // }, 
+        // },
         // {
         //   pagePath: 'pages/shopPage',
         //   iconPath: '/assets/images/shop.gray.png',
@@ -90,7 +77,7 @@
       // },
       plugins: {
         tencentvideo: {
-          version: '1.2.3',
+          version: '1.2.4',
           provider: 'wxa75efa648b60994b'
         }
       }
@@ -102,29 +89,8 @@
       super()
       this.use('requestfix')
       this.use('promisify')
-      // config intercept to include accessToken
-      // this.intercept('request', {
-      //   config (p) {
-      //     console.log('p', p)
-      //     p.header = {...p.header, Authorization: 'hello world'}
-      //     return p;
-      //   },
-      //   success (p) {
-      //     console.log('request success')
-      //     return p;
-      //   },
-      //   fail (p) {
-      //     console.log('request error')
-      //     return p;
-      //   }
-      // });
     }
     onLaunch() {
-      // console.log('launch')
-      // this.getUserInfo((res) => {
-      //   console.log('complete')
-      //   console.log(res)
-      // })
     }
   }
 </script>
